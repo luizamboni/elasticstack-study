@@ -1,0 +1,58 @@
+version: '2'
+services:
+  app: 
+    build: app/.
+    volumes:
+      - ./logs:/logs
+    # networks: ['stack']
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:6.5.4
+    volumes:
+      - ./logs:/logs:ro
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+    depends_on:
+      - elasticsearch
+      - app
+    networks: ['stack']
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:6.5.4
+    volumes: 
+      - ./logstash/beat-pipeline.conf:/usr/share/logstash/beat-pipeline.conf:ro
+    command:
+      - -f
+      - beat-pipeline.conf
+    depends_on:
+      - elasticsearch
+    networks: ['stack']
+
+  logstash-sample:
+    image: docker.elastic.co/logstash/logstash:6.5.4
+    volumes: 
+      - ./logstash/sample-events.conf:/usr/share/logstash/sample-events.conf:ro
+    command:
+      - -f
+      - sample-events.conf
+    depends_on:
+      - elasticsearch
+    networks: ['stack']
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.5.4
+    ports:
+      - 9200:9200
+    networks: ['stack']
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.5.4
+    ports:
+     - 5601:5601
+    depends_on:
+      - elasticsearch
+    networks: ['stack']
+
+networks: 
+  stack:
+
+
